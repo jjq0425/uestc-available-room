@@ -9,23 +9,23 @@
 <body>
     <!-- 查询教室是否可用 -->
     <div id="classroom">
-        <h1>查询教室是否可用</h1>
-        <p style="color:red">demo版本，查询时除了教室号都需要输入，查询时先点击特定教室查询0->特定教室查询1->特定教室查询2</p>
-        <p>教室号：<input type="text" v-model="classroom_id"></p>
+        <h1>查询哪些教室可用</h1>
+        <p style="color:red">demo版本，查询时先点击特定教室查询0->特定教室查询1->特定教室查询2</p>
+        <!-- <p>教室号：<input type="text" v-model="classroom_id"></p> -->
         <p>第几周：<input type="text" v-model="week"></p>
         <p>教学楼：<input type="text" v-model="building_name"></p>
         <p>星期几：<input type="text" v-model="xqj"></p>
         <p>开始节次：<input type="text" v-model="start"></p>
         <p>结束节次：<input type="text" v-model="end"></p>
-        <button @click="searchClassroom()">查询</button>
+        <button @click="searchClassroom()">查询【不要点我，未开发】</button>
         <button @click="search_special_building()">特定教室查询1</button>
         <button @click="find_available_classroom()">特定教室查询2</button>
-        <p v-if="classroom_is_available==true">教室可用</p>
+        <!-- <p v-if="classroom_is_available==true">教室可用</p>
         <p v-else-if="classroom_is_available==false">教室不可用</p>
-        <p v-else>教室不存在</p>
+        <p v-else>教室不存在</p> -->
 
 
-        <p >{{available}}</p>
+        <p >可用教室有{{available}}</p>
 
         <button @click="allClassroom()">特定教室查询0</button>
         
