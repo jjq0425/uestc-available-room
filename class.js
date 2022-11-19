@@ -3,7 +3,7 @@ var classroom = new Vue({
     data: {
         class_list: [],
         classroom_id: '',
-        week: 8,
+        week: 4,
         section: '',
         xqj: 1,
         classroom_is_available: '',
@@ -15,6 +15,7 @@ var classroom = new Vue({
     },
 
     methods: {
+        
         allClassroom: function () {
             var that=this;
             axios({
@@ -130,9 +131,31 @@ var classroom = new Vue({
 
             }//将所有教室名字存入available数组中
         },
+        
+        get_Thisweek: function(){
+            var that=this;
+            axios({
+                url:'https://studyapi.uestc.edu.cn/ckd/getWeek',
+                method:'get',
+                timeout: 1000,
+
+            }).then(function (response) {
+                that.week=response.data;
+                console.log(that.week);
+            }).catch(function (error) {
+                console.log(error);
+            })
+
+        },
 
 
         
 
-    }
-})
+    },
+    // watch: {
+    //     week: {
+    //       handler: 'get_Thisweek()',
+    //       immediate: true
+    //     }
+    //     },
+    })
