@@ -1,49 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
     <!-- 查询教室是否可用 -->
     <div id="classroom">
-        <h1>查询哪些教室可用</h1>
-        <p style="color:red">demo版本，查询时先点击特定教室查询0->特定教室查询1->特定教室查询2</p>
+        <h1>查询哪些教室可用V0.5</h1>
+        <!-- <p style="color:red">demo版本，查询时先点击特定教室查询0->特定教室查询1->特定教室查询2</p> -->
         <!-- <p>教室号：<input type="text" v-model="classroom_id"></p> -->
         <p>第几周：<input type="text" v-model="week"></p>
         <p>教学楼：<input type="text" v-model="building_name"></p>
         <p>星期几：<input type="text" v-model="xqj"></p>
         <p>开始节次：<input type="text" v-model="start"></p>
         <p>结束节次：<input type="text" v-model="end"></p>
-        <button @click="searchClassroom()">查询【不要点我，未开发】</button>
-        <button @click="search_special_building()">特定教室查询1</button>
-        <button @click="find_available_classroom()">特定教室查询2</button>
+        <!-- <button @click="searchClassroom()">查询【不要点我，未开发】</button> -->
+        <!-- <button @click="search_special_building()">特定教室查询1</button> -->
+        <button @click="find_available_classroom()">特定教室查询</button>
         <!-- <p v-if="classroom_is_available==true">教室可用</p>
         <p v-else-if="classroom_is_available==false">教室不可用</p>
         <p v-else>教室不存在</p> -->
 
 
-        <p >可用教室有{{available}}</p>
+        <p>可用教室有{{available}}</p>
 
-        <button @click="allClassroom()">特定教室查询0</button>
-        <button @click="get_Thisweek()">这是第几周？</button>
-        
+        <!-- <button @click="allClassroom()">特定教室查询0</button> -->
+        <!-- <button @click="get_Thisweek()">这是第几周？</button> -->
+
     </div>
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <!-- 官网提供的 axios 在线地址 -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <!-- 自己的js -->
+    <script>
+        var classroom = new Vue({
+            el: '#classroom',
+            data: {
+                class_list: [],
+                classroom_id: '',
+                week: 4,
+                section: '',
+                xqj: 1,
+                classroom_is_available: '',
+                start: 7,
+                end: 8,
+                building: [],
+                available: [],
+                building_name: '二教',
+            },
+            created() {
+                this.get_Thisweek();
+                //获取当前星期几
+                this.get_xqj();
 
-    <!-- js记得切换 -->
-    <!-- js记得切换 -->
-    <!-- js记得切换 -->
-    <!-- js记得切换 -->
-    <!-- <script src="./class.js"></script> -->
-    <script src="https://jjq419875574.github.io/uestc-available-room/class.js"></script>
-    
+            },
+            methods: {
+
+                async allClassroom() {
+                    let that = this;
+                    return new Promise((resolve, reject) => {
+                        axios({
+                            url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
+                            method: 'post',
+                            data: { "type": "allclassroom", "data": [{}] },
+                            timeout: 1000,
+                            headers: 'Content-Type: application/json'
+                        }).then(function (response) {
+                            that.class_list = response.data.data;
+                            resolve(that.class_list)
+                        }).catch(function (error) {
+                            reject();
+                        })
+                    })
+
+
+                },
+                async searchClassroom() {
+                    var that = this;
+                    return new Promise((resolve, reject) => {
+                        axios({
+                            url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
+                            method: 'post',
+                            data: { "type": "thisweek_courseschedule", "data": [{ "room_name": that.classroom_id, "qqdjz": that.week }] },
+                            timeout: 1000,
+                            headers: 'Content-Type: application/json'
+                        }).then(function (response) {
+                            resolve(response)
+                        }).catch(function (err) {
+                            console.log(err);
+                        })
+                    })
+
+
+
+                },
+
+
+                //查询所有二教的可用教室
+                async search_special_building() {
+                    var that = this;
+                    return new Promise(function (resolve, reject) {  //promise 创建resolve和reject函数 用于回调函数的两
+                        // var i=0;
+                        axios({
+                            url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
+                            method: 'post',
+                            data: { "type": "allclassroom", "data": [{}] },
+                            // timeout: 1000,
+                            headers: 'Content-Type: application/json',
+                            async: false,
+                        }).then(function (response) {
+
+                            for (var k = 0; k < that.class_list.length; k++) {
+                                if (that.class_list[k].building == that.building_name) {
+                                    that.building.push(that.class_list[k]);
+                                }
+                            }//查找需要查找的所有教室列表并且存入building数组中
+                            // console.log(that.building[0]);
+                            // that.$options.methods.find_available_classroom();
+
+                            console.log(that.building);
+                            resolve(that.building)
+
+                        }
+                        ).catch(function (err) {
+                            console.log(err);
+                        }
+                        )
+                    })
+                },
+
+
+
+                async find_available_classroom() {
+                    this.available = [];
+                    await this.allClassroom();
+                    await this.search_special_building();
+                    var that = this;
+                    for (i = 0; i < that.building.length; i++) {
+                        //使得axio调用后再执行for
+                        var that = this;
+                        var tmp_room_name = that.building[i].building + that.building[i].room_name;
+                        // console.log(that.building[0]);
+                        // console.log(tmp_room_name);
+                        await axios({
+                            url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
+                            method: 'post',
+                            data: { "type": "thisweek_courseschedule", "data": [{ "room_name": that.building[i].building + that.building[i].room_name, "qqdjz": that.week }] },
+
+                            // timeout: 1000,
+                            headers: 'Content-Type: application/json',
+                            saync: false,
+                        }).then(function (response) {
+                            console.log(response.data);
+
+                            var is_avail = true;
+
+                            for (var j = 0; j < response.data.data.length + 1; j++) {
+                                if (j < response.data.data.length && response.data.data[j].xqj == that.xqj && ((response.data.data[j].ksjc >= that.start && response.data.data[j].jsjc <= that.end) || (response.data.data[j].ksjc <= that.end && response.data.data[j].ksjc >= that.start) || (response.data.data[j].jsjc <= that.end && response.data.data[j].jsjc >= that.start))) {
+                                    is_avail = false;
+
+                                }
+                                else if (j == response.data.data.length) {
+                                    if (is_avail) {
+                                        that.available.push(tmp_room_name);
+                                        console.log(tmp_room_name);
+                                    }
+                                }
+                                else {
+                                    continue;
+                                }
+
+                            }
+
+
+
+
+
+                        }).catch(function (err) {
+                            console.log(err);
+                        })
+
+                    }//将所有教室名字存入available数组中
+                },
+
+                // 获取第几周
+                get_Thisweek: function () {
+                    var that = this;
+                    axios({
+                        url: 'https://studyapi.uestc.edu.cn/ckd/getWeek',
+                        method: 'get',
+                        timeout: 1000,
+
+                    }).then(function (response) {
+                        that.week = response.data;
+                        console.log(that.week);
+                    }).catch(function (error) {
+                        console.log(error);
+                    })
+
+                },
+                // 获取星期几
+                get_xqj() {
+                    //用js获取星期几
+                    var now = new Date();
+                    var day = now.getDay();
+                    var weeks = new Array("7", "1", "2", "3", "4", "5", "6");
+                    var week = weeks[day];
+                    this.xqj = parseInt(week);
+
+                }
+
+
+
+
+            },
+
+        })
+    </script>
+
 
 </body>
+
 </html>
