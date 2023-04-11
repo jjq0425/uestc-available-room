@@ -162,7 +162,7 @@
                             var is_avail = true;
 
                             for (var j = 0; j < response.data.data.length + 1; j++) {
-                                if (j < response.data.data.length && response.data.data[j].xqj == that.xqj && ((response.data.data[j].ksjc >= that.start && response.data.data[j].jsjc <= that.end) || (response.data.data[j].ksjc <= that.end && response.data.data[j].ksjc >= that.start) || (response.data.data[j].jsjc <= that.end && response.data.data[j].jsjc >= that.start))) {
+                                if (j < response.data.data.length && response.data.data[j].xqj == that.xqj && (response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start)) {
                                     is_avail = false;
 
                                 }
