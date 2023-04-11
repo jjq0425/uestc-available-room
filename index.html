@@ -48,8 +48,8 @@
                 section: '',
                 xqj: 1,
                 classroom_is_available: '',
-                start: 7,
-                end: 8,
+                start: 9,
+                end: 10,
                 building: [],
                 available: [],
                 building_name: '二教',
@@ -157,25 +157,28 @@
                             headers: 'Content-Type: application/json',
                             saync: false,
                         }).then(function (response) {
-                            console.log(response.data);
+                            console.log(response.data.data);
 
                             var is_avail = true;
 
-                            for (var j = 0; j < response.data.data.length + 1; j++) {
-                                if (j < response.data.data.length && response.data.data[j].xqj == that.xqj && !(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start)) {
+                            for (var j = 0; j < response.data.data.length; j++) {
+                                // console.log(response.data.data[j].ksjc);
+                                // console.log(that.end);
+                                // console.log(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start);
+                                let [s, e] = response.data.data[j].kksd.split('-').map(Number);
+                                if (response.data.data[j].xqj == that.xqj && !(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start) && that.week >= s && week <= e) {
                                     is_avail = false;
 
                                 }
-                                else if (j == response.data.data.length) {
-                                    if (is_avail) {
-                                        that.available.push(tmp_room_name);
-                                        console.log(tmp_room_name);
-                                    }
-                                }
+
                                 else {
                                     continue;
                                 }
 
+                            }
+                            if (is_avail) {
+                                that.available.push(tmp_room_name);
+                                console.log(tmp_room_name);
                             }
 
 
