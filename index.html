@@ -6,37 +6,58 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 </head>
 
 <body>
     <!-- 查询教室是否可用 -->
     <div id="classroom">
-        <h1>查询哪些教室可用V0.5</h1>
-        <!-- <p style="color:red">demo版本，查询时先点击特定教室查询0->特定教室查询1->特定教室查询2</p> -->
-        <!-- <p>教室号：<input type="text" v-model="classroom_id"></p> -->
-        <p>第几周：<input type="text" v-model="week"></p>
-        <p>教学楼：<input type="text" v-model="building_name"></p>
-        <p>星期几：<input type="text" v-model="xqj"></p>
-        <p>开始节次：<input type="text" v-model="start"></p>
-        <p>结束节次：<input type="text" v-model="end"></p>
-        <!-- <button @click="searchClassroom()">查询【不要点我，未开发】</button> -->
-        <!-- <button @click="search_special_building()">特定教室查询1</button> -->
-        <button @click="find_available_classroom()">特定教室查询</button>
-        <!-- <p v-if="classroom_is_available==true">教室可用</p>
-        <p v-else-if="classroom_is_available==false">教室不可用</p>
-        <p v-else>教室不存在</p> -->
+
+        <div id="classroom">
+            <div style="text-align:center;">
+                <h1>查询哪些教室可用V0.6</h1>
+            </div>
+            <hr>
+            <el-form label-width="100px">
+                <el-form-item label="第几周">
+                    <el-input v-model="week"></el-input>
+                </el-form-item>
+                <el-form-item label="教学楼">
+                    <el-input v-model="building_name"></el-input>
+                </el-form-item>
+                <el-form-item label="星期几">
+                    <el-input v-model="xqj"></el-input>
+                </el-form-item>
+                <el-form-item label="开始节次">
+                    <el-input v-model="start"></el-input>
+                </el-form-item>
+                <el-form-item label="结束节次">
+                    <el-input v-model="end"></el-input>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="find_available_classroom()">查询可用教室</el-button>
+                </el-form-item>
+            </el-form>
+
+            <!-- 可用教室列表 -->
+            <el-card v-if="available.length > 0" style="width:80%;margin:0 auto;">
+                <div slot="header" style="font-weight: bold;">可用教室列表：</div>
+                <div>
+                    <span v-for="room in available" :key="room"> {{ room }} </span>
+                </div>
+            </el-card>
+        </div>
 
 
-        <p>可用教室有{{available}}</p>
-
-        <!-- <button @click="allClassroom()">特定教室查询0</button> -->
-        <!-- <button @click="get_Thisweek()">这是第几周？</button> -->
 
     </div>
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <!-- 官网提供的 axios 在线地址 -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <!-- 引入element组件 -->
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
     <!-- 自己的js -->
     <script>
         var classroom = new Vue({
