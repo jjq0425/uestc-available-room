@@ -97,13 +97,14 @@
                         <el-input-number v-model="end" :min="start+1" :max="12"></el-input-number>
                     </el-form-item>
                     <el-form-item>
-                        <el-button type="primary" @click="find_available_classroom()">查询可用教室</el-button>
+                        <el-button type="primary" @click="find_available_classroom()"
+                            :loading="search_has_finish==2">查询可用教室</el-button>
                         <!-- <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()">清空查询</el-button> -->
-                        <el-popover placement="top-start" title="注意" width="200" trigger="hover"
-                            content="本轮查询结束前暂时不能清空查询结果" :disabled="search_percentage==100">
-                            <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()"
-                                slot="reference">清空查询</el-button>
-                        </el-popover>
+                        <el-button type="warning" round icon="el-icon-remove-outline" @click="stopNow()"
+                            v-show="search_has_finish==2">终止查询</el-button>
+                        <el-button type="danger" plain v-show="search_has_finish==1||search_has_finish==3"
+                            @click="clear_()">清空查询结果</el-button>
+
                     </el-form-item>
                 </el-form>
             </div>
@@ -115,7 +116,7 @@
                     <div>
                         <div style="display: inline-block;float: left;font-size:14px">查询进度 &nbsp;</div>
                         <div style="display: inline-block;float: right;min-width:250px">
-                            <el-progress style="" :text-inside="true" :stroke-width="22" :percentage="search_percentage"
+                            <el-progress :text-inside="true" :stroke-width="22" :percentage="search_percentage"
                                 :color="percentagecustomColors" status="warning"></el-progress>
                         </div>
                     </div>
@@ -123,12 +124,16 @@
                 </div>
                 <div>
                     <span v-if="available.length==0&& search_percentage<=0" style="color:#ff6b6b">请输入信息后点击查询</span>
-                    <span v-else-if="search_percentage>0&& search_percentage<100" style="color:#4dabf7"><i
-                            class="el-icon-loading"></i>查询中请稍等</span>
-                    <el-alert v-else :title="'查询成功,共查询到'+available.length+'个教室'" type="success" show-icon
-                        :closable="false">
+                    <span v-else-if="search_percentage>0&& search_percentage<100&&search_has_finish!=3"
+                        style="color:#2862d6" style="margin-bottom: 10px;"><i
+                            class="el-icon-loading"></i>查询内容较多，请稍等</span>
+                    <el-alert v-else-if="search_has_finish==3" :title="'查询被终止,目前共查询到'+available.length+'个教室'"
+                        type="warning" show-icon :closable="false">
+                    </el-alert><br v-else-if="search_has_finish==3" />
+                    <el-alert v-if="search_has_finish==1" :title="'查询成功,共查询到'+available.length+'个教室'" type="success"
+                        show-icon :closable="false">
                     </el-alert><br />
-                    <span v-for="room in available" :key="room"> {{ room }} </span>
+                    <span v-for="room in available" :key="room"> &nbsp;{{ room }}&nbsp; </span>
                     <el-empty v-if="search_percentage==100 && available.length==0 "
                         description="您的筛选条件下暂无空闲教室"></el-empty>
                 </div>
@@ -179,6 +184,7 @@
 
                 position_has_change: false,
                 position_has_finish: 0,
+
 
                 time_calendar: [{
                     val: 1,
@@ -234,6 +240,7 @@
 
                 //进度条
                 search_percentage: 0,
+                search_has_finish: 0,//0 未开始；1结束；2进行中
                 percentagecustomColors: [
                     { color: '#ffc9c9', percentage: 25 },
                     { color: '#fcc2d7', percentage: 50 },
@@ -259,7 +266,7 @@
                         },
                         {
                             enableHighAccuracy: false,
-                            timeout: 50000,
+                            timeout: 5000,
                         }
                     );
 
@@ -333,6 +340,7 @@
                 //查询所有二教的可用教室
                 async search_special_building() {
                     var that = this;
+                    that.building = [];
                     let cleaned_building_name = that.building_name[1];
                     let school_area = that.building_name[0]
 
@@ -370,6 +378,7 @@
 
                 async find_available_classroom() {
                     this.available = [];
+                    this.search_has_finish = 2;
                     this.search_percentage = 0;
                     await this.allClassroom();
                     await this.search_special_building();
@@ -381,6 +390,9 @@
                         var tmp_room_name = that.building[i].building + that.building[i].room_name;
                         // console.log(that.building[0]);
                         // console.log(tmp_room_name);
+                        if (this.search_has_finish == 3) {
+                            break;
+                        }
                         await axios({
                             url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
                             method: 'post',
@@ -392,6 +404,7 @@
                         }).then(function (response) {
                             console.log(response.data.data);
                             that.search_percentage = Math.floor(((i + 1) / room_num * 100) * 100) / 100;
+
                             var is_avail = true;
 
                             for (var j = 0; j < response.data.data.length; j++) {
@@ -399,6 +412,9 @@
                                 // console.log(that.end);
                                 // console.log(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start);
                                 let [s, e] = response.data.data[j].kksd.split('-').map(Number);
+                                if (that.search_has_finish == 3) {
+                                    break;
+                                }
                                 if (response.data.data[j].xqj == that.xqj && !(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start) && that.week >= s && week <= e) {
                                     is_avail = false;
 
@@ -412,6 +428,12 @@
                             if (is_avail) {
                                 that.available.push(tmp_room_name);
                                 console.log(tmp_room_name);
+                            }
+                            if (this.search_has_finish == 3) {
+                                return;
+                            }
+                            if (that.search_percentage == 100) {
+                                that.search_has_finish = 1
                             }
 
 
@@ -458,15 +480,9 @@
 
                 //清空查询
                 clear_() {
-                    if (this.search_percentage != 100) {
-                        this.$notify({
-                            title: '警告',
-                            message: '请等待本轮查询结束再清空',
-                            type: 'warning'
-                        });
-                        return;
-                    }
+
                     this.search_percentage = 0;
+                    this.search_has_finish = 0;
                     this.available = [];
                     this.$notify({
                         title: '成功',
@@ -695,6 +711,10 @@
                     this.jieci_Next = closestValue
                     this.$message('已成功获取当前日期和最近节次');
                     return
+
+                },
+                stopNow() {
+                    this.search_has_finish = 3;
 
                 }
 
