@@ -16,7 +16,7 @@
 
         <div id="classroom">
             <div style="text-align:center;">
-                <h1>查询哪些教室空闲V0.7</h1>
+                <h1>UESTC查询哪些教室空闲V0.7</h1>
             </div>
             <hr>
             <div style="margin-left: 10px;">
@@ -27,9 +27,21 @@
                         <el-step title="得到结果"></el-step>
                     </el-steps>
                     <el-divider content-position="left"><i class="el-icon-position"></i>地点选择</el-divider>
+                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
+                        部分网页支持自动定位,目前支持教学楼级别定位。chrome因为https缘故不支持，可以使用edge。当无法准确定位时采用校区级定位,默认位置为沙河二教和清水河品学楼</div>
                     <el-form-item label="教学楼">
                         <!-- <el-input v-model="building_name"></el-input> -->
-                        <el-cascader :options="options" :show-all-levels="true" v-model="building_name"></el-cascader>
+                        <el-cascader :options="options" :show-all-levels="true" v-model="building_name"
+                            @change="position_has_change=true"></el-cascader>
+
+                        <span v-show='position_has_change==false&&position_has_finish==0'
+                            style="color:#4dabf7;margin-left:10px"><i class="el-icon-loading"></i>定位中,请稍等</span>
+                        <span v-show='position_has_change==false&&position_has_finish==-1'
+                            style="color:#ffc9c9;margin-left:10px"><i
+                                class="el-icon-circle-close"></i>自动定位失败或不支持,请手动输入</span>
+                        <span v-show='position_has_change==false&&position_has_finish==1'
+                            style="color:#12b886;margin-left:10px"><i class="el-icon-circle-check
+                            "></i>已自动拉取定位</span>
                     </el-form-item>
                     <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
@@ -51,7 +63,8 @@
                             <div class="grid-content bg-purple">
                                 <el-form-item label="日期">
                                     <el-date-picker v-model="pickDate" type="date" placeholder="选择日期"
-                                        :picker-options="pickerDateOptions" @change="week_xqj_change(2)">
+                                        :picker-options="pickerDateOptions" @change="week_xqj_change(2)"
+                                        :clearable="false">
                                     </el-date-picker>
                                 </el-form-item>
                             </div>
@@ -59,6 +72,8 @@
                     </el-row>
 
                     <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
+                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
+                        开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。</div>
                     <el-form-item label="开始节次">
                         <!-- <el-input v-model="start"></el-input> -->
                         <el-input-number v-model="start" :min="0" :max="end-1"></el-input-number>
@@ -148,6 +163,10 @@
                 pickDate: '',
 
 
+                position_has_change: false,
+                position_has_finish: 0,
+
+
 
                 //进度条
                 search_percentage: 0,
@@ -159,21 +178,29 @@
                     { color: '#96f2d7', percentage: 100 }
                 ]
             },
-            async created() {
+            created() {
                 this.get_Thisweek();
                 //获取当前星期几
                 this.get_xqj();
-
+                let that = this;
                 if (navigator.geolocation) {
                     var n = navigator.geolocation.getCurrentPosition(
                         function (res) {
-                            console.info('地理信息(辅助判断位置)', res); // 需要的坐标地址就在res中
+                            console.warn('地理信息(辅助判断位置)', res); // 需要的坐标地址就在res中
+                            that.handleGPS(res);
                         },
                         function (err) {
-                            console.info(err)
+                            console.warn(err)
+                            that.position_has_finish = -1;
+                        },
+                        {
+                            enableHighAccuracy: false,
+                            timeout: 5000,
                         }
                     );
+
                 }
+                this.TimeNow();
 
 
             },
@@ -439,15 +466,204 @@
                     else {
                         const startDate = new Date(this.startMon); // 转换为Date对象
                         const targetDate = new Date(this.pickDate); // 转换为Date对象
+                        targetDate.setHours(0, 0, 0);
                         const timeDiff = targetDate.getTime() - startDate.getTime(); // 计算选定日期与第一周的时间差
+                        // console.warn(targetDate)
                         this.week = Math.ceil(timeDiff / (7 * 24 * 60 * 60 * 1000)) + 1; // 计算对应的周数
                         const xqj_tmp = targetDate.getDay(); // 获取选定日期是星期几（0表示星期天，1表示星期一，以此类推）
                         if (xqj_tmp == 0) {
                             this.xqj = 7;
+                            this.week = this.week - 1;
                         } else {
                             this.xqj = xqj_tmp;
                         }
                     }
+                },
+                handleGPS(res) {
+
+                    // longitude1 = 103.93858
+                    // //，纬度：
+                    // latitude1 = 30.75596
+                    // // console.log(res.coords.latitude)
+                    if (this.position_has_change) {
+                        //位置已经被手工修改
+                        return;
+                    }
+                    const options = [
+                        {
+                            val: ['沙河', '四教'],
+                            long: 104.10627,//精度
+                            dim: 30.68114,//维度
+                            area: 120,//范围
+                        },
+                        {
+                            val: ['沙河', '主楼'],
+                            long: 104.10768,//精度
+                            dim: 30.67970,//维度
+                            area: 100,//范围
+                        },
+                        {
+                            val: ['沙河', '二教'],
+                            long: 104.10942,//精度
+                            dim: 30.68034,//维度
+                            area: 8000,//范围
+                        },
+                        {
+                            val: ['清水河', '立人楼'],
+                            long: 103.93890,//精度
+                            dim: 30.75506,//维度
+                            area: 130,//范围
+                        },
+                        {
+                            val: ['清水河', '经管楼'],
+                            long: 103.93902,//精度
+                            dim: 30.75504,//维度
+                            area: 150,//范围
+                        },
+                        {
+                            val: ['清水河', '学生活动中心'],
+                            long: 103.93547,//精度
+                            dim: 30.76143,//维度
+                            area: 120,//范围
+                        },
+                        {
+                            val: ['清水河', '主楼'],
+                            long: 103.93330,//精度
+                            dim: 30.75240,//维度
+                            area: 250,//范围
+                        },
+                        {
+                            val: ['清水河', '品学楼'],
+                            long: 103.93918,//精度
+                            dim: 30.75734,//维度
+                            area: 40000,//范围
+                        },
+                    ]
+                    let closestOption = null;
+                    let minDistance = Infinity;
+
+                    for (const option of options) {
+                        const distance = this.calculateDistance(res.coords.longitude, res.coords.latitude, option.long, option.dim);
+                        // const distance = this.calculateDistance(longitude1, latitude1, option.long, option.dim);
+                        console.log('测距-->', option, distance);
+                        if (distance < minDistance && distance * 100000 <= option.area) {
+                            minDistance = distance;
+                            closestOption = option;
+                        }
+                    }
+
+                    if (closestOption) {
+                        this.building_name = closestOption.val
+                        this.position_has_finish = 1;
+                    }
+                    else {
+                        this.position_has_finish = -1;
+                    }
+
+
+
+                },
+                // 计算两点之间的距离（使用简化的计算公式）
+                calculateDistance(long1, dim1, long2, dim2) {
+                    const dx = long2 - long1;
+                    const dy = dim2 - dim1;
+                    return Math.sqrt(dx * dx + dy * dy);
+                },
+
+
+
+                TimeNow() {
+
+                    const currentTime = new Date();
+                    const currentHour = currentTime.getHours();
+                    const currentMinute = currentTime.getMinutes();
+
+                    const time_calendar = [{
+                        val: 1,
+                        startTime: '8:30'
+                    }, {
+                        val: 2,
+                        startTime: '9:20'
+                    }, {
+                        val: 3,
+                        startTime: '10:20'
+                    }, {
+                        val: 4,
+                        startTime: '11:20'
+                    }, {
+                        val: 5,
+                        startTime: '14:30'
+                    }, {
+                        val: 6,
+                        startTime: '15:20'
+                    }, {
+                        val: 7,
+                        startTime: '16:20'
+                    }, {
+                        val: 8,
+                        startTime: '17:10'
+                    }, {
+                        val: 9,
+                        startTime: '19:30'
+                    }, {
+                        val: 10,
+                        startTime: '20:20'
+                    }, {
+                        val: 11,
+                        startTime: '21:10'
+                    }, {
+                        val: 12,
+                        startTime: '22:00'
+                    }];
+
+                    let closestTime = null;
+                    let closestValue = null;
+
+                    for (let i = 0; i < time_calendar.length; i++) {
+                        const startTimeParts = time_calendar[i].startTime.split(':');
+                        const startHour = parseInt(startTimeParts[0]);
+                        const startMinute = parseInt(startTimeParts[1]);
+
+                        if (currentHour < startHour || (currentHour === startHour && currentMinute < startMinute)) {
+                            if (closestTime === null ||
+                                (startHour - currentHour) * 60 + (startMinute - currentMinute) < closestTime) {
+                                closestTime = (startHour - currentHour) * 60 + (startMinute - currentMinute);
+                                closestValue = time_calendar[i].val;
+                            }
+                        }
+                    }
+                    // console.log(closestValue)
+                    if (closestValue == null) {
+                        this.start = 1;
+                        this.end = 1 + 1;
+
+                        var date = new Date(this.pickDate);
+
+                        // 将日期加一天
+                        date.setDate(date.getDate() + 1);
+
+                        // 将新的日期转换为字符串形式
+                        this.pickDate = date.toISOString().slice(0, 10);
+                        setTimeout(() => {
+                            this.week_xqj_change(2);
+                        }, 1000)
+                        this.$message('今日教学任务已经结束，查询日期自动设置为明日日期，您可以自行修改');
+                        return
+
+
+                    }
+                    else if (closestValue < 12) {
+
+                        this.start = closestValue;
+                        this.end = closestValue + 1;
+                    }
+                    else {
+                        this.start = 11;
+                        this.end = closestValue + 1;
+                    }
+                    this.$message('已成功获取当前日期和最近节次');
+                    return
+
                 }
 
 
