@@ -12,6 +12,7 @@
 
 <body>
     <!-- 查询教室是否可用 -->
+    <!-- <b>条件筛选</b> -->
     <div id="classroom">
 
         <div id="classroom">
@@ -30,7 +31,8 @@
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
                         部分网页支持自动定位,目前支持教学楼级别定位，距离教学楼较远采用校区级别定位,默认位置为沙河二教和清水河品学楼。<br />chrome/部分手机浏览器/飞书内置浏览器因为谷歌原因<b>可能不支持任何定位</b>（可参考
                         <el-link href="https://developer.chrome.com/blog/geolocation-on-secure-contexts-only/"
-                            target="_blank">这篇文章</el-link>）,但edge/safari等非谷歌内核浏览器仍然有效。
+                            target="_blank">这篇文章</el-link>）,但edge/safari等非谷歌内核浏览器仍然有效。<br />
+                        对于无法使用定位的情况，将默认使用缓存存储的上一次查询的教学楼名称
                     </div>
                     <el-form-item label="教学楼">
                         <!-- <el-input v-model="building_name"></el-input> -->
@@ -46,6 +48,66 @@
                             style="color:#12b886;margin-left:10px"><i class="el-icon-circle-check
                             "></i>已自动拉取定位</span>
                     </el-form-item>
+                    <el-form-item v-if="areas.show">
+
+                        <template slot="label">
+                            区位选择
+                            <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
+                                <i class="el-icon-warning-outline" slot="reference"></i>
+
+                            </el-popover>
+                        </template>
+                        <div style="display: flex;">
+                            <el-checkbox-group v-model="checkedArea">
+                                <el-checkbox v-for="AREA in areas.options" :label="AREA"
+                                    :key="AREA">{{building_name[1]+AREA+'区'}}</el-checkbox>
+                            </el-checkbox-group>
+                        </div>
+                    </el-form-item>
+                    <el-form-item v-else="areas.show">
+                        <template slot="label">
+                            区位选择
+                            <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
+                                <i class="el-icon-warning-outline" slot="reference"></i>
+
+                            </el-popover>
+                        </template>
+                        <div style="color:#ced4da ;">区位选择仅在清水河校区品学楼、立人楼、经管楼使用</div>
+                    </el-form-item>
+                    <el-form-item v-if="floor.show">
+
+                        <template slot="label">
+                            楼层选择
+                            <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
+                                <i class="el-icon-warning-outline" slot="reference"></i>
+
+                            </el-popover>
+                        </template>
+                        <div style="display: flex;">
+                            <el-checkbox-group v-model="checkedFloor">
+                                <el-checkbox v-for="Floor in floor.options" :label="Floor"
+                                    :key="Floor">{{building_name[1]+Floor+'楼'}}</el-checkbox>
+                            </el-checkbox-group>
+                        </div>
+                    </el-form-item>
+                    <el-form-item v-else="areas.show">
+                        <template slot="label">
+                            楼层选择
+                            <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
+                                <i class="el-icon-warning-outline" slot="reference"></i>
+
+                            </el-popover>
+                        </template>
+                        <div style="color:#ced4da ;">楼层选择仅在部分楼栋使用</div>
+                    </el-form-item>
+
+
+
+
                     <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
                         只需填写任意一组，另一组会自动匹配。默认填写今日的</div>
@@ -53,7 +115,7 @@
                         <el-col :span="10">
                             <div class="grid-content bg-purple"></div><el-form-item label="第几周">
                                 <!-- <el-input v-model="week"></el-input> -->
-                                <el-input-number v-model="week" :min="0" :max="25"
+                                <el-input-number v-model="week" :min="1" :max="25"
                                     @change="week_xqj_change(1)"></el-input-number>
                             </el-form-item>
                             <el-form-item label="星期几">
@@ -76,7 +138,7 @@
 
                     <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
-                        开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。
+                        输入空闲的时段自动查找匹配教室，开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。
                         <el-popover placement="top-start" title="节次时间表" width="200" trigger="hover">
                             <div v-for="o in time_calendar">
                                 <div style="color:#adb5bd" v-show="o.val<jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
@@ -85,27 +147,36 @@
                                     {{o.startTime}}~{{o.endTime}}</div>
                             </div>
                             <el-link type="primary" slot="reference">查看节次时间表</el-link>
+                        </el-popover>
                     </div>
                     <el-form-item label="开始节次">
-                        </el-popover>
+
 
                         <!-- <el-input v-model="start"></el-input> -->
-                        <el-input-number v-model="start" :min="0" :max="end-1"></el-input-number>
+                        <el-input-number v-model="start" :min="1" :max="end"></el-input-number>
                     </el-form-item>
                     <el-form-item label="结束节次">
                         <!-- <el-input v-model="end"></el-input> -->
-                        <el-input-number v-model="end" :min="start+1" :max="12"></el-input-number>
+                        <el-input-number v-model="end" :min="start" :max="12"></el-input-number>
                     </el-form-item>
+                    <el-checkbox v-model="canLocalstorage" size="mini" style="margin-left:100px;margin-bottom: 10px;">
+                        启用缓存记录上次查询教学楼
+                        <el-popover placement="top-start" title="缓存干啥？" width="200" trigger="hover"
+                            content="因为chrome内核浏览器不支持定位服务，因此可以启动缓存功能，记录上一次点击查询的教学楼名称，以方便下一次查询。如果您的浏览器支持定位,开启后无影响，定位后仍然默认为定位位置">
+                            <i class="el-icon-question" slot="reference"></i>
+                        </el-popover>
+                    </el-checkbox>
                     <el-form-item>
-                        <el-button type="primary" @click="find_available_classroom()"
-                            :loading="search_has_finish==2">查询可用教室</el-button>
+                        <el-button type="primary" @click="find_available_classroom()" :loading="search_has_finish==2"
+                            style="margin-top:10px">查询可用教室</el-button>
                         <!-- <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()">清空查询</el-button> -->
                         <el-button type="warning" round icon="el-icon-remove-outline" @click="stopNow()"
-                            v-show="search_has_finish==2">终止查询</el-button>
+                            v-show="search_has_finish==2" style="margin-top:10px">终止查询</el-button>
                         <el-button type="danger" plain v-show="search_has_finish==1||search_has_finish==3"
-                            @click="clear_()">清空查询结果</el-button>
+                            @click="clear_()" style="margin-top:10px">清空查询结果</el-button>
 
                     </el-form-item>
+
                 </el-form>
             </div>
 
@@ -133,7 +204,12 @@
                     <el-alert v-if="search_has_finish==1" :title="'查询成功,共查询到'+available.length+'个教室'" type="success"
                         show-icon :closable="false">
                     </el-alert><br />
+                    <!-- 提示 -->
+
+
+
                     <span v-for="room in available" :key="room"> &nbsp;{{ room }}&nbsp; </span>
+
                     <el-empty v-if="search_percentage==100 && available.length==0 "
                         description="您的筛选条件下暂无空闲教室"></el-empty>
                 </div>
@@ -176,10 +252,14 @@
                     children: [{ value: '二教', label: '二教' }, { value: '四教', label: '四教' }, { value: '主楼', label: '沙河主楼' },]
                 }],
 
+                //教学区域选择
+                checkedArea: [],
+                checkedFloor: [],
 
                 //第二选择
                 startMon: '',
                 pickDate: '',
+                canLocalstorage: true,
 
 
                 position_has_change: false,
@@ -250,29 +330,15 @@
                 ]
             },
             created() {
+                // 从 localStorage 中获取保存的 JSON 字符串
+                var jsonArray = localStorage.getItem("uestcFindAvailableBuilding");
+                if (jsonArray != null) {
+                    this.building_name = JSON.parse(jsonArray);
+                }
                 this.get_Thisweek();
                 //获取当前星期几
                 this.get_xqj();
-                let that = this;
-                if (navigator.geolocation) {
-                    var n = navigator.geolocation.getCurrentPosition(
-                        function (res) {
-                            console.warn('地理信息(辅助判断位置)', res); // 需要的坐标地址就在res中
-                            that.handleGPS(res);
-                        },
-                        function (err) {
-                            console.warn(err)
-                            that.position_has_finish = -1;
-                        },
-                        {
-                            enableHighAccuracy: false,
-                            timeout: 5000,
-                        }
-                    );
-
-                } else {
-                    that.position_has_finish = -1;
-                }
+                this.getlocation();
                 this.TimeNow();
 
 
@@ -294,6 +360,93 @@
 
                     }
                 },
+                areas() {
+                    let building = this.building_name[1];
+                    let show = false;
+                    let option = []
+
+                    if (building.includes("品学楼") || building.includes("立人楼") || building.includes("经管楼")) {
+                        show = true;
+                        if (building.includes("立人楼")) {
+                            option = ['A', 'B'];
+                            this.checkedArea = ['A', 'B'];
+                        } else {
+                            option = ['A', 'B', 'C'];
+                            this.checkedArea = ['A', 'B', 'C'];
+                        }
+                    } else {
+                        show = false;
+                    }
+                    return { options: option, show: show }
+
+
+                },
+                floor() {
+                    let building = this.building_name[1];
+                    let xiaoqu = this.building_name[0];
+                    let show = false;
+                    let option = []
+
+                    if (building.includes("学生发展中心")) {
+                        show = true;
+                        option = ['1', '2']
+                        this.checkedFloor = option;
+                    } else if (building.includes("经管楼")) {
+                        show = true;
+                        option = ['2', '3']
+
+                        if (this.checkedArea.includes('C')) {
+                            option.push('5');
+                            if (!option.includes('1')) {
+                                option.push('1');
+                            }
+                        }
+                        if (this.checkedArea.includes('A')) {
+                            option.push('4');
+                            if (!option.includes('1')) {
+                                option.push('1');
+                            }
+                        }
+                        option.sort();
+
+                        //A:1\2\3\4
+                        //B:2\3
+                        //C:1\2\3\5
+
+                        this.checkedFloor = option;
+                    } else if (building.includes('品学楼') || building.includes('立人楼')) {
+                        show = true;
+                        option = ['1', '2', '3', '4'];
+                        if (this.checkedArea.includes('C')) {
+                            option.push('5');
+
+                        }
+                        this.checkedFloor = option;
+                    } else if (building.includes('主楼') && xiaoqu == '清水河') {
+                        show = true;
+                        option = ['1', '5', '7', '8'];
+                        this.checkedFloor = option;
+                    } else if (building.includes('四教')) {
+                        show = true;
+                        option = ['1', '2', '3'];
+                        this.checkedFloor = option;
+                    }
+                    else if (building.includes('二教')) {
+                        show = true;
+                        option = ['1', '2', '3', '4'];
+                        this.checkedFloor = option;
+                    } else if (building.includes('主楼') && xiaoqu == '沙河') {
+                        show = true;
+                        option = ['1', '2', '3', '4', '5'];
+                        this.checkedFloor = option;
+                    }
+                    else {
+                        show = false;
+                    }
+                    return { options: option, show: show }
+
+
+                }
             },
             methods: {
 
@@ -375,8 +528,49 @@
                 },
 
 
+                matchStrings(prex, str) {
 
+                    var remainingStr = str.substring(prex.length);
+
+
+
+                    var firstChar = remainingStr.charAt(0);
+                    var secondChar = remainingStr.charAt(1);
+
+                    return this.checkedArea.includes(firstChar) && this.checkedFloor.includes(secondChar);
+                },
+                checkFrom() {
+                    if (this.areas.show && this.checkedArea.length == 0) {
+                        this.$notify.error({
+                            title: '错误',
+                            message: '区位选择必须选择至少一个'
+                        });
+                        return false;
+                    } else if (this.floor.show && this.checkedFloor.length == 0) {
+
+                        this.$notify.error({
+                            title: '错误',
+                            message: '楼层选择必须选择至少一个'
+                        });
+                        return false;
+                    }
+                    return true;
+
+                },
                 async find_available_classroom() {
+                    if (!this.checkFrom()) {
+                        return
+                    }
+                    // 将 JSON 字符串保存到 localStorage 中的名为 "myArray" 的键中
+                    if (this.canLocalstorage) {
+                        let jsonArray = JSON.stringify(this.building_name);
+                        localStorage.setItem("uestcFindAvailableBuilding", jsonArray);
+                    }
+                    else {
+                        localStorage.clear();
+                    }
+
+
                     this.available = [];
                     this.search_has_finish = 2;
                     this.search_percentage = 0;
@@ -385,13 +579,45 @@
                     var that = this;
                     let room_num = that.building.length;
                     for (i = 0; i < that.building.length; i++) {
+                        if (this.search_has_finish == 3) {
+                            break;
+                        }
                         //使得axio调用后再执行for
                         var that = this;
                         var tmp_room_name = that.building[i].building + that.building[i].room_name;
                         // console.log(that.building[0]);
                         // console.log(tmp_room_name);
-                        if (this.search_has_finish == 3) {
-                            break;
+
+                        if (this.areas.show == true && this.floor.show == true) {
+
+                            // if (!this.checkedArea.some(function (area) {
+                            //     let matchstr = that.building_name[1] + area
+                            //     return tmp_room_name.includes(matchstr);
+                            // })) {
+                            //     that.search_percentage = Math.floor(((i + 1) / room_num * 100) * 100) / 100;
+                            //     if (that.search_percentage == 100) {
+                            //         that.search_has_finish = 1
+                            //     }
+                            //     continue;
+                            // } else if ()
+                            if (!this.matchStrings(that.building_name[1], tmp_room_name)) {
+                                that.search_percentage = Math.floor(((i + 1) / room_num * 100) * 100) / 100;
+                                if (that.search_percentage == 100) {
+                                    that.search_has_finish = 1
+                                }
+                                continue;
+                            }
+                        } else if (this.floor.show == true) {
+                            if (!this.checkedFloor.some(function (area) {
+                                let matchstr = that.building_name[1] + area
+                                return tmp_room_name.includes(matchstr);
+                            })) {
+                                that.search_percentage = Math.floor(((i + 1) / room_num * 100) * 100) / 100;
+                                if (that.search_percentage == 100) {
+                                    that.search_has_finish = 1
+                                }
+                                continue;
+                            }
                         }
                         await axios({
                             url: 'https://studyapi.uestc.edu.cn/api/pub/exp/school/data',
@@ -415,7 +641,7 @@
                                 if (that.search_has_finish == 3) {
                                     break;
                                 }
-                                if (response.data.data[j].xqj == that.xqj && !(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start) && that.week >= s && week <= e) {
+                                if (response.data.data[j].xqj == that.xqj && that.week >= s && (that.week <= e || e == undefined) && !(response.data.data[j].jsjc <= that.start || response.data.data[j].ksjc >= that.end)) {
                                     is_avail = false;
 
                                 }
@@ -444,6 +670,7 @@
                         }).catch(function (err) {
                             console.log(err);
                         })
+
 
                     }//将所有教室名字存入available数组中
                 },
@@ -559,6 +786,36 @@
                         } else {
                             this.xqj = xqj_tmp;
                         }
+                    }
+                },
+
+
+
+
+                /**
+                 * @description: 获取位置
+                 * @return {*}
+                 */
+                getlocation() {
+                    let that = this;
+                    if (navigator.geolocation) {
+                        var n = navigator.geolocation.getCurrentPosition(
+                            function (res) {
+                                console.warn('地理信息(辅助判断位置)', res); // 需要的坐标地址就在res中
+                                that.handleGPS(res);
+                            },
+                            function (err) {
+                                console.warn(err)
+                                that.position_has_finish = -1;
+                            },
+                            {
+                                enableHighAccuracy: false,
+                                timeout: 5000,
+                            }
+                        );
+
+                    } else {
+                        that.position_has_finish = -1;
                     }
                 },
                 handleGPS(res) {
