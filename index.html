@@ -9,41 +9,99 @@
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 </head>
 
+
 <body>
     <!-- 查询教室是否可用 -->
     <div id="classroom">
 
         <div id="classroom">
             <div style="text-align:center;">
-                <h1>查询哪些教室可用V0.6</h1>
+                <h1>查询哪些教室空闲V0.7</h1>
             </div>
             <hr>
-            <el-form label-width="100px">
-                <el-form-item label="第几周">
-                    <el-input v-model="week"></el-input>
-                </el-form-item>
-                <el-form-item label="教学楼">
-                    <el-input v-model="building_name"></el-input>
-                </el-form-item>
-                <el-form-item label="星期几">
-                    <el-input v-model="xqj"></el-input>
-                </el-form-item>
-                <el-form-item label="开始节次">
-                    <el-input v-model="start"></el-input>
-                </el-form-item>
-                <el-form-item label="结束节次">
-                    <el-input v-model="end"></el-input>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="find_available_classroom()">查询可用教室</el-button>
-                </el-form-item>
-            </el-form>
+            <div style="margin-left: 10px;">
+                <el-form label-width="100px">
+                    <el-steps :active="3" finish-status="process" simple>
+                        <el-step title="填写信息"></el-step>
+                        <el-step title="点击查询"></el-step>
+                        <el-step title="得到结果"></el-step>
+                    </el-steps>
+                    <el-divider content-position="left"><i class="el-icon-position"></i>地点选择</el-divider>
+                    <el-form-item label="教学楼">
+                        <!-- <el-input v-model="building_name"></el-input> -->
+                        <el-cascader :options="options" :show-all-levels="true" v-model="building_name"></el-cascader>
+                    </el-form-item>
+                    <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
+                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
+                        只需填写任意一组，另一组会自动匹配。默认填写今日的</div>
+                    <br /><el-row :gutter="20" type="flex" style="flex-wrap: wrap;">
+                        <el-col :span="10">
+                            <div class="grid-content bg-purple"></div><el-form-item label="第几周">
+                                <!-- <el-input v-model="week"></el-input> -->
+                                <el-input-number v-model="week" :min="0" :max="25"
+                                    @change="week_xqj_change(1)"></el-input-number>
+                            </el-form-item>
+                            <el-form-item label="星期几">
+                                <!-- <el-input v-model="xqj"></el-input> -->
+                                <el-input-number v-model="xqj" :min="1" :max="7"
+                                    @change="week_xqj_change(1)"></el-input-number>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="100">
+                            <div class="grid-content bg-purple">
+                                <el-form-item label="日期">
+                                    <el-date-picker v-model="pickDate" type="date" placeholder="选择日期"
+                                        :picker-options="pickerDateOptions" @change="week_xqj_change(2)">
+                                    </el-date-picker>
+                                </el-form-item>
+                            </div>
+                        </el-col>
+                    </el-row>
+
+                    <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
+                    <el-form-item label="开始节次">
+                        <!-- <el-input v-model="start"></el-input> -->
+                        <el-input-number v-model="start" :min="0" :max="end-1"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="结束节次">
+                        <!-- <el-input v-model="end"></el-input> -->
+                        <el-input-number v-model="end" :min="start+1" :max="12"></el-input-number>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="find_available_classroom()">查询可用教室</el-button>
+                        <!-- <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()">清空查询</el-button> -->
+                        <el-popover placement="top-start" title="注意" width="200" trigger="hover"
+                            content="本轮查询结束前暂时不能清空查询结果" :disabled="search_percentage==100">
+                            <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()"
+                                slot="reference">清空查询</el-button>
+                        </el-popover>
+                    </el-form-item>
+                </el-form>
+            </div>
 
             <!-- 可用教室列表 -->
-            <el-card v-if="available.length > 0" style="width:80%;margin:0 auto;">
-                <div slot="header" style="font-weight: bold;">可用教室列表：</div>
+            <el-card v-if="available.length >= 0" style="width:80%;margin:0 auto;">
+                <div slot="header" style="display: flex;justify-content: space-between;flex-wrap: wrap;">
+                    <div style="font-weight: bold;">可用教室列表：</div>
+                    <div>
+                        <div style="display: inline-block;float: left;font-size:14px">查询进度 &nbsp;</div>
+                        <div style="display: inline-block;float: right;min-width:250px">
+                            <el-progress style="" :text-inside="true" :stroke-width="22" :percentage="search_percentage"
+                                :color="percentagecustomColors" status="warning"></el-progress>
+                        </div>
+                    </div>
+
+                </div>
                 <div>
+                    <span v-if="available.length==0&& search_percentage<=0" style="color:#ff6b6b">请输入信息后点击查询</span>
+                    <span v-else-if="search_percentage>0&& search_percentage<100" style="color:#4dabf7"><i
+                            class="el-icon-loading"></i>查询中请稍等</span>
+                    <el-alert v-else :title="'查询成功,共查询到'+available.length+'个教室'" type="success" show-icon
+                        :closable="false">
+                    </el-alert><br />
                     <span v-for="room in available" :key="room"> {{ room }} </span>
+                    <el-empty v-if="search_percentage==100 && available.length==0 "
+                        description="您的筛选条件下暂无空闲教室"></el-empty>
                 </div>
             </el-card>
         </div>
@@ -73,13 +131,69 @@
                 end: 10,
                 building: [],
                 available: [],
-                building_name: '二教',
+                building_name: ['沙河', '二教'],
+                options: [{
+                    value: '清水河',
+                    label: '清水河校区',
+                    children: [{ value: '品学楼', label: '品学楼' }, { value: '立人楼', label: '立人楼' }, { value: '经管楼', label: '经管楼' }, { value: '学生发展中心', label: '学生发展中心' }, { value: '主楼', label: '清水河主楼' }]
+                }, {
+                    value: '沙河',
+                    label: '沙河校区',
+                    children: [{ value: '二教', label: '二教' }, { value: '四教', label: '四教' }, { value: '主楼', label: '沙河主楼' },]
+                }],
+
+
+                //第二选择
+                startMon: '',
+                pickDate: '',
+
+
+
+                //进度条
+                search_percentage: 0,
+                percentagecustomColors: [
+                    { color: '#ffc9c9', percentage: 25 },
+                    { color: '#fcc2d7', percentage: 50 },
+                    { color: '#ffd8a8', percentage: 75 },
+                    { color: '#ffe066', percentage: 95 },
+                    { color: '#96f2d7', percentage: 100 }
+                ]
             },
-            created() {
+            async created() {
                 this.get_Thisweek();
                 //获取当前星期几
                 this.get_xqj();
 
+                if (navigator.geolocation) {
+                    var n = navigator.geolocation.getCurrentPosition(
+                        function (res) {
+                            console.info('地理信息(辅助判断位置)', res); // 需要的坐标地址就在res中
+                        },
+                        function (err) {
+                            console.info(err)
+                        }
+                    );
+                }
+
+
+            },
+            computed: {
+                //第二选择
+                pickerDateOptions() {
+                    let that = this;
+                    return {
+                        disabledDate(time) {
+                            const currentDate = new Date();
+                            const currentYear = currentDate.getFullYear();
+                            const currentMonth = currentDate.getMonth() + 1;
+                            const currentDay = currentDate.getDate();
+                            const startDate = new Date(that.startMon);
+                            const endDate = new Date(startDate.getTime() + ((25 * 7 - 1) * 24 * 60 * 60 * 1000)); // 将日期向后推进 25 周
+                            return time.getTime() < startDate || time.getTime() > endDate;
+                        }
+
+                    }
+                },
             },
             methods: {
 
@@ -126,6 +240,9 @@
                 //查询所有二教的可用教室
                 async search_special_building() {
                     var that = this;
+                    let cleaned_building_name = that.building_name[1];
+                    let school_area = that.building_name[0]
+
                     return new Promise(function (resolve, reject) {  //promise 创建resolve和reject函数 用于回调函数的两
                         // var i=0;
                         axios({
@@ -138,9 +255,9 @@
                         }).then(function (response) {
 
                             for (var k = 0; k < that.class_list.length; k++) {
-                                if (that.class_list[k].building == that.building_name) {
+                                if (that.class_list[k].building == cleaned_building_name && that.class_list[k].school == school_area) {
                                     that.building.push(that.class_list[k]);
-                                }
+                                }//从索引 1 开始截取字符串)
                             }//查找需要查找的所有教室列表并且存入building数组中
                             // console.log(that.building[0]);
                             // that.$options.methods.find_available_classroom();
@@ -160,9 +277,11 @@
 
                 async find_available_classroom() {
                     this.available = [];
+                    this.search_percentage = 0;
                     await this.allClassroom();
                     await this.search_special_building();
                     var that = this;
+                    let room_num = that.building.length;
                     for (i = 0; i < that.building.length; i++) {
                         //使得axio调用后再执行for
                         var that = this;
@@ -179,7 +298,7 @@
                             saync: false,
                         }).then(function (response) {
                             console.log(response.data.data);
-
+                            that.search_percentage = Math.floor(((i + 1) / room_num * 100) * 100) / 100;
                             var is_avail = true;
 
                             for (var j = 0; j < response.data.data.length; j++) {
@@ -206,6 +325,7 @@
 
 
 
+
                         }).catch(function (err) {
                             console.log(err);
                         })
@@ -223,7 +343,8 @@
 
                     }).then(function (response) {
                         that.week = response.data;
-                        console.log(that.week);
+                        that.startMon = that.getPreviousWeekDateAndNextMonday(new Date(), response.data);
+                        // console.log(that.week);
                     }).catch(function (error) {
                         console.log(error);
                     })
@@ -237,13 +358,107 @@
                     var weeks = new Array("7", "1", "2", "3", "4", "5", "6");
                     var week = weeks[day];
                     this.xqj = parseInt(week);
+                    this.pickDate = new Date()
 
+                },
+
+
+                //清空查询
+                clear_() {
+                    if (this.search_percentage != 100) {
+                        this.$notify({
+                            title: '警告',
+                            message: '请等待本轮查询结束再清空',
+                            type: 'warning'
+                        });
+                        return;
+                    }
+                    this.search_percentage = 0;
+                    this.available = [];
+                    this.$notify({
+                        title: '成功',
+                        message: '已经清空查询结果',
+                        type: 'success'
+                    });
+
+                },
+
+
+
+                /**
+                 * @description: 获取第一周的星期一的日期
+                 * @param {*} date：当前日期
+                 * @param {*} x：当前第几周
+                 * @return {*}
+                 */
+                getPreviousWeekDateAndNextMonday(date, x) {
+                    var currentDate = new Date(date.getTime());
+                    var previousWeekDate = new Date(currentDate.getTime() - (x * 7 * 24 * 60 * 60 * 1000));
+
+                    var year = previousWeekDate.getFullYear();
+                    var month = previousWeekDate.getMonth() + 1;
+                    var day = previousWeekDate.getDate();
+
+                    var previousWeekDateString = year + '-' + month + '-' + day;
+
+                    var nextMondayDate = new Date(previousWeekDate);
+                    if (nextMondayDate.getDay() == 0) {
+                        nextMondayDate.setDate(nextMondayDate.getDate() - nextMondayDate.getDay() + 1);
+                    }
+                    else {
+                        nextMondayDate.setDate(nextMondayDate.getDate() - nextMondayDate.getDay() + 1 + 7);
+                    }
+
+
+                    var nextMondayYear = nextMondayDate.getFullYear();
+                    var nextMondayMonth = nextMondayDate.getMonth() + 1;
+                    var nextMondayDay = nextMondayDate.getDate();
+
+                    var nextMondayString = nextMondayYear + '-' + nextMondayMonth + '-' + nextMondayDay;
+
+                    return nextMondayString;
+                },
+
+                week_xqj_change(flag) {
+                    if (this.week == null || this.xqj == null) {
+                        return;
+                    }
+                    else if (flag == 1) {
+                        const startDate = new Date(this.startMon); // 转换为Date对象
+                        const targetDate = new Date(startDate.getTime() + (this.week - 1) * 7 * 24 * 60 * 60 * 1000); // 计算目标日期
+
+                        // 调整目标日期为对应的星期几
+                        targetDate.setDate(targetDate.getDate() + (this.xqj - targetDate.getDay() + 7) % 7);
+
+                        const year = targetDate.getFullYear();
+                        const month = targetDate.getMonth() + 1;
+                        const day = targetDate.getDate();
+
+                        this.pickDate = `${year}-${month}-${day}`;
+                    }
+                    else {
+                        const startDate = new Date(this.startMon); // 转换为Date对象
+                        const targetDate = new Date(this.pickDate); // 转换为Date对象
+                        const timeDiff = targetDate.getTime() - startDate.getTime(); // 计算选定日期与第一周的时间差
+                        this.week = Math.ceil(timeDiff / (7 * 24 * 60 * 60 * 1000)) + 1; // 计算对应的周数
+                        const xqj_tmp = targetDate.getDay(); // 获取选定日期是星期几（0表示星期天，1表示星期一，以此类推）
+                        if (xqj_tmp == 0) {
+                            this.xqj = 7;
+                        } else {
+                            this.xqj = xqj_tmp;
+                        }
+                    }
                 }
 
 
 
 
+
+
+
+
             },
+
 
         })
     </script>
