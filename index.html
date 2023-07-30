@@ -28,7 +28,10 @@
                     </el-steps>
                     <el-divider content-position="left"><i class="el-icon-position"></i>地点选择</el-divider>
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
-                        部分网页支持自动定位,目前支持教学楼级别定位。chrome因为https缘故不支持，可以使用edge。当无法准确定位时采用校区级定位,默认位置为沙河二教和清水河品学楼</div>
+                        部分网页支持自动定位,目前支持教学楼级别定位，距离教学楼较远采用校区级别定位,默认位置为沙河二教和清水河品学楼。<br />chrome/部分手机浏览器/飞书内置浏览器因为谷歌原因<b>可能不支持任何定位</b>（可参考
+                        <el-link href="https://developer.chrome.com/blog/geolocation-on-secure-contexts-only/"
+                            target="_blank">这篇文章</el-link>）,但edge/safari等非谷歌内核浏览器仍然有效。
+                    </div>
                     <el-form-item label="教学楼">
                         <!-- <el-input v-model="building_name"></el-input> -->
                         <el-cascader :options="options" :show-all-levels="true" v-model="building_name"
@@ -73,8 +76,19 @@
 
                     <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
                     <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
-                        开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。</div>
+                        开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。
+                        <el-popover placement="top-start" title="节次时间表" width="200" trigger="hover">
+                            <div v-for="o in time_calendar">
+                                <div style="color:#adb5bd" v-show="o.val<jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
+                                    {{o.startTime}}~{{o.endTime}}</div>
+                                <div v-show="o.val>=jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
+                                    {{o.startTime}}~{{o.endTime}}</div>
+                            </div>
+                            <el-link type="primary" slot="reference">查看节次时间表</el-link>
+                    </div>
                     <el-form-item label="开始节次">
+                        </el-popover>
+
                         <!-- <el-input v-model="start"></el-input> -->
                         <el-input-number v-model="start" :min="0" :max="end-1"></el-input-number>
                     </el-form-item>
@@ -166,6 +180,56 @@
                 position_has_change: false,
                 position_has_finish: 0,
 
+                time_calendar: [{
+                    val: 1,
+                    startTime: '8:30',
+                    endTime: '9:15'
+                }, {
+                    val: 2,
+                    startTime: '9:20',
+                    endTime: '10:05'
+                }, {
+                    val: 3,
+                    startTime: '10:20',
+                    endTime: '11:05'
+                }, {
+                    val: 4,
+                    startTime: '11:10',
+                    endTime: '11:55'
+                }, {
+                    val: 5,
+                    startTime: '14:30',
+                    endTime: '15:15'
+                }, {
+                    val: 6,
+                    startTime: '15:20',
+                    endTime: '16:05'
+                }, {
+                    val: 7,
+                    startTime: '16:20',
+                    endTime: '17:05'
+                }, {
+                    val: 8,
+                    startTime: '17:10',
+                    endTime: '17:55'
+                }, {
+                    val: 9,
+                    startTime: '19:30',
+                    endTime: '20:15'
+                }, {
+                    val: 10,
+                    startTime: '20:20',
+                    endTime: '21:05'
+                }, {
+                    val: 11,
+                    startTime: '21:10',
+                    endTime: '21:55'
+                }, {
+                    val: 12,
+                    startTime: '22:00',
+                    endTime: '22:45'
+                }],
+                jieci_Next: 0,
 
 
                 //进度条
@@ -195,10 +259,12 @@
                         },
                         {
                             enableHighAccuracy: false,
-                            timeout: 5000,
+                            timeout: 50000,
                         }
                     );
 
+                } else {
+                    that.position_has_finish = -1;
                 }
                 this.TimeNow();
 
@@ -578,43 +644,7 @@
                     const currentHour = currentTime.getHours();
                     const currentMinute = currentTime.getMinutes();
 
-                    const time_calendar = [{
-                        val: 1,
-                        startTime: '8:30'
-                    }, {
-                        val: 2,
-                        startTime: '9:20'
-                    }, {
-                        val: 3,
-                        startTime: '10:20'
-                    }, {
-                        val: 4,
-                        startTime: '11:20'
-                    }, {
-                        val: 5,
-                        startTime: '14:30'
-                    }, {
-                        val: 6,
-                        startTime: '15:20'
-                    }, {
-                        val: 7,
-                        startTime: '16:20'
-                    }, {
-                        val: 8,
-                        startTime: '17:10'
-                    }, {
-                        val: 9,
-                        startTime: '19:30'
-                    }, {
-                        val: 10,
-                        startTime: '20:20'
-                    }, {
-                        val: 11,
-                        startTime: '21:10'
-                    }, {
-                        val: 12,
-                        startTime: '22:00'
-                    }];
+                    const time_calendar = this.time_calendar;
 
                     let closestTime = null;
                     let closestValue = null;
@@ -648,6 +678,7 @@
                             this.week_xqj_change(2);
                         }, 1000)
                         this.$message('今日教学任务已经结束，查询日期自动设置为明日日期，您可以自行修改');
+                        this.jieci_Next = 13;
                         return
 
 
@@ -661,6 +692,7 @@
                         this.start = 11;
                         this.end = closestValue + 1;
                     }
+                    this.jieci_Next = closestValue
                     this.$message('已成功获取当前日期和最近节次');
                     return
 
