@@ -20,200 +20,210 @@
                 <h1>UESTC查询哪些教室空闲V0.7</h1>
             </div>
             <hr>
-            <div style="margin-left: 10px;">
-                <el-form label-width="100px">
-                    <el-steps :active="3" finish-status="process" simple>
-                        <el-step title="填写信息"></el-step>
-                        <el-step title="点击查询"></el-step>
-                        <el-step title="得到结果"></el-step>
-                    </el-steps>
-                    <el-divider content-position="left"><i class="el-icon-position"></i>地点选择</el-divider>
-                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
-                        部分网页支持自动定位,目前支持教学楼级别定位，距离教学楼较远采用校区级别定位,默认位置为沙河二教和清水河品学楼。<br />chrome/部分手机浏览器/飞书内置浏览器因为谷歌原因<b>可能不支持任何定位</b>（可参考
-                        <el-link href="https://developer.chrome.com/blog/geolocation-on-secure-contexts-only/"
-                            target="_blank">这篇文章</el-link>）,但edge/safari等非谷歌内核浏览器仍然有效。<br />
-                        对于无法使用定位的情况，将默认使用缓存存储的上一次查询的教学楼名称
-                    </div>
-                    <el-form-item label="教学楼">
-                        <!-- <el-input v-model="building_name"></el-input> -->
-                        <el-cascader :options="options" :show-all-levels="true" v-model="building_name"
-                            @change="position_has_change=true"></el-cascader>
+            <div v-show="canSeach">
+                <div style="margin-left: 10px;">
+                    <el-form label-width="100px">
+                        <el-steps :active="3" finish-status="process" simple>
+                            <el-step title="填写信息"></el-step>
+                            <el-step title="点击查询"></el-step>
+                            <el-step title="得到结果"></el-step>
+                        </el-steps>
+                        <el-divider content-position="left"><i class="el-icon-position"></i>地点选择</el-divider>
+                        <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
+                            部分网页支持自动定位,目前支持教学楼级别定位，距离教学楼较远采用校区级别定位,默认位置为沙河二教和清水河品学楼。<br />chrome/部分手机浏览器/飞书内置浏览器因为谷歌原因<b>可能不支持任何定位</b>（可参考
+                            <el-link href="https://developer.chrome.com/blog/geolocation-on-secure-contexts-only/"
+                                target="_blank">这篇文章</el-link>）,但edge/safari等非谷歌内核浏览器仍然有效。<br />
+                            对于无法使用定位的情况，将默认使用缓存存储的上一次查询的教学楼名称
+                        </div>
+                        <el-form-item label="教学楼">
+                            <!-- <el-input v-model="building_name"></el-input> -->
+                            <el-cascader :options="options" :show-all-levels="true" v-model="building_name"
+                                @change="position_has_change=true"></el-cascader>
 
-                        <span v-show='position_has_change==false&&position_has_finish==0'
-                            style="color:#4dabf7;margin-left:10px"><i class="el-icon-loading"></i>定位中,请稍等</span>
-                        <span v-show='position_has_change==false&&position_has_finish==-1'
-                            style="color:#ffc9c9;margin-left:10px"><i
-                                class="el-icon-circle-close"></i>自动定位失败或不支持,请手动输入</span>
-                        <span v-show='position_has_change==false&&position_has_finish==1'
-                            style="color:#12b886;margin-left:10px"><i class="el-icon-circle-check
+                            <span v-show='position_has_change==false&&position_has_finish==0'
+                                style="color:#4dabf7;margin-left:10px"><i class="el-icon-loading"></i>定位中,请稍等</span>
+                            <span v-show='position_has_change==false&&position_has_finish==-1'
+                                style="color:#ffc9c9;margin-left:10px"><i
+                                    class="el-icon-circle-close"></i>自动定位失败或不支持,请手动输入</span>
+                            <span v-show='position_has_change==false&&position_has_finish==1'
+                                style="color:#12b886;margin-left:10px"><i class="el-icon-circle-check
                             "></i>已自动拉取定位</span>
-                    </el-form-item>
-                    <el-form-item v-if="areas.show">
+                        </el-form-item>
+                        <el-form-item v-if="areas.show">
 
-                        <template slot="label">
-                            区位选择
-                            <el-popover placement="top-start" title="" width="200" trigger="hover"
-                                content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
-                                <i class="el-icon-warning-outline" slot="reference"></i>
+                            <template slot="label">
+                                区位选择
+                                <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                    content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
+                                    <i class="el-icon-warning-outline" slot="reference"></i>
 
-                            </el-popover>
-                        </template>
-                        <div style="display: flex;">
-                            <el-checkbox-group v-model="checkedArea">
-                                <el-checkbox v-for="AREA in areas.options" :label="AREA"
-                                    :key="AREA">{{building_name[1]+AREA+'区'}}</el-checkbox>
-                            </el-checkbox-group>
-                        </div>
-                    </el-form-item>
-                    <el-form-item v-else="areas.show">
-                        <template slot="label">
-                            区位选择
-                            <el-popover placement="top-start" title="" width="200" trigger="hover"
-                                content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
-                                <i class="el-icon-warning-outline" slot="reference"></i>
+                                </el-popover>
+                            </template>
+                            <div style="display: flex;">
+                                <el-checkbox-group v-model="checkedArea">
+                                    <el-checkbox v-for="AREA in areas.options" :label="AREA"
+                                        :key="AREA">{{building_name[1]+AREA+'区'}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </el-form-item>
+                        <el-form-item v-else="areas.show">
+                            <template slot="label">
+                                区位选择
+                                <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                    content="在清水河校区立人楼、品学楼、经管楼，会有以A、B、C标识的房间，为了更好的筛选这类房间，支持进行筛选">
+                                    <i class="el-icon-warning-outline" slot="reference"></i>
 
-                            </el-popover>
-                        </template>
-                        <div style="color:#ced4da ;">区位选择仅在清水河校区品学楼、立人楼、经管楼使用</div>
-                    </el-form-item>
-                    <el-form-item v-if="floor.show">
+                                </el-popover>
+                            </template>
+                            <div style="color:#ced4da ;">区位选择仅在清水河校区品学楼、立人楼、经管楼使用</div>
+                        </el-form-item>
+                        <el-form-item v-if="floor.show">
 
-                        <template slot="label">
-                            楼层选择
-                            <el-popover placement="top-start" title="" width="200" trigger="hover"
-                                content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
-                                <i class="el-icon-warning-outline" slot="reference"></i>
+                            <template slot="label">
+                                楼层选择
+                                <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                    content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
+                                    <i class="el-icon-warning-outline" slot="reference"></i>
 
-                            </el-popover>
-                        </template>
-                        <div style="display: flex;">
-                            <el-checkbox-group v-model="checkedFloor">
-                                <el-checkbox v-for="Floor in floor.options" :label="Floor"
-                                    :key="Floor">{{building_name[1]+Floor+'楼'}}</el-checkbox>
-                            </el-checkbox-group>
-                        </div>
-                    </el-form-item>
-                    <el-form-item v-else="areas.show">
-                        <template slot="label">
-                            楼层选择
-                            <el-popover placement="top-start" title="" width="200" trigger="hover"
-                                content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
-                                <i class="el-icon-warning-outline" slot="reference"></i>
+                                </el-popover>
+                            </template>
+                            <div style="display: flex;">
+                                <el-checkbox-group v-model="checkedFloor">
+                                    <el-checkbox v-for="Floor in floor.options" :label="Floor"
+                                        :key="Floor">{{building_name[1]+Floor+'楼'}}</el-checkbox>
+                                </el-checkbox-group>
+                            </div>
+                        </el-form-item>
+                        <el-form-item v-else="areas.show">
+                            <template slot="label">
+                                楼层选择
+                                <el-popover placement="top-start" title="" width="200" trigger="hover"
+                                    content="少部分楼栋不支持，若楼栋可分区，不同分区可查询的楼层不一定相同（如经管楼B区只可查询2、3楼）">
+                                    <i class="el-icon-warning-outline" slot="reference"></i>
 
-                            </el-popover>
-                        </template>
-                        <div style="color:#ced4da ;">楼层选择仅在部分楼栋使用</div>
-                    </el-form-item>
-
-
+                                </el-popover>
+                            </template>
+                            <div style="color:#ced4da ;">楼层选择仅在部分楼栋使用</div>
+                        </el-form-item>
 
 
-                    <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
-                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
-                        只需填写任意一组，另一组会自动匹配。默认填写今日的</div>
-                    <br /><el-row :gutter="20" type="flex" style="flex-wrap: wrap;">
-                        <el-col :span="10">
-                            <div class="grid-content bg-purple"></div><el-form-item label="第几周">
-                                <!-- <el-input v-model="week"></el-input> -->
-                                <el-input-number v-model="week" :min="1" :max="25"
-                                    @change="week_xqj_change(1)"></el-input-number>
-                            </el-form-item>
-                            <el-form-item label="星期几">
-                                <!-- <el-input v-model="xqj"></el-input> -->
-                                <el-input-number v-model="xqj" :min="1" :max="7"
-                                    @change="week_xqj_change(1)"></el-input-number>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="100">
-                            <div class="grid-content bg-purple">
-                                <el-form-item label="日期">
-                                    <el-date-picker v-model="pickDate" type="date" placeholder="选择日期"
-                                        :picker-options="pickerDateOptions" @change="week_xqj_change(2)"
-                                        :clearable="false">
-                                    </el-date-picker>
+
+
+                        <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
+                        <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
+                            只需填写任意一组，另一组会自动匹配。默认填写今日的</div>
+                        <br /><el-row :gutter="20" type="flex" style="flex-wrap: wrap;">
+                            <el-col :span="10">
+                                <div class="grid-content bg-purple"></div><el-form-item label="第几周">
+                                    <!-- <el-input v-model="week"></el-input> -->
+                                    <el-input-number v-model="week" :min="1" :max="25"
+                                        @change="week_xqj_change(1)"></el-input-number>
                                 </el-form-item>
-                            </div>
-                        </el-col>
-                    </el-row>
+                                <el-form-item label="星期几">
+                                    <!-- <el-input v-model="xqj"></el-input> -->
+                                    <el-input-number v-model="xqj" :min="1" :max="7"
+                                        @change="week_xqj_change(1)"></el-input-number>
+                                </el-form-item>
+                            </el-col>
+                            <el-col :span="100">
+                                <div class="grid-content bg-purple">
+                                    <el-form-item label="日期">
+                                        <el-date-picker v-model="pickDate" type="date" placeholder="选择日期"
+                                            :picker-options="pickerDateOptions" @change="week_xqj_change(2)"
+                                            :clearable="false">
+                                        </el-date-picker>
+                                    </el-form-item>
+                                </div>
+                            </el-col>
+                        </el-row>
 
-                    <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
-                    <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
-                        输入空闲的时段自动查找匹配教室，开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。
-                        <el-popover placement="top-start" title="节次时间表" width="200" trigger="hover">
-                            <div v-for="o in time_calendar">
-                                <div style="color:#adb5bd" v-show="o.val<jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
-                                    {{o.startTime}}~{{o.endTime}}</div>
-                                <div v-show="o.val>=jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
-                                    {{o.startTime}}~{{o.endTime}}</div>
-                            </div>
-                            <el-link type="primary" slot="reference">查看节次时间表</el-link>
-                        </el-popover>
-                    </div>
-                    <el-form-item label="开始节次">
-
-
-                        <!-- <el-input v-model="start"></el-input> -->
-                        <el-input-number v-model="start" :min="1" :max="end"></el-input-number>
-                    </el-form-item>
-                    <el-form-item label="结束节次">
-                        <!-- <el-input v-model="end"></el-input> -->
-                        <el-input-number v-model="end" :min="start" :max="12"></el-input-number>
-                    </el-form-item>
-                    <el-checkbox v-model="canLocalstorage" size="mini" style="margin-left:100px;margin-bottom: 10px;">
-                        启用缓存记录上次查询教学楼
-                        <el-popover placement="top-start" title="缓存干啥？" width="200" trigger="hover"
-                            content="因为chrome内核浏览器不支持定位服务，因此可以启动缓存功能，记录上一次点击查询的教学楼名称，以方便下一次查询。如果您的浏览器支持定位,开启后无影响，定位后仍然默认为定位位置">
-                            <i class="el-icon-question" slot="reference"></i>
-                        </el-popover>
-                    </el-checkbox>
-                    <el-form-item>
-                        <el-button type="primary" @click="find_available_classroom()" :loading="search_has_finish==2"
-                            style="margin-top:10px">查询可用教室</el-button>
-                        <!-- <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()">清空查询</el-button> -->
-                        <el-button type="warning" round icon="el-icon-remove-outline" @click="stopNow()"
-                            v-show="search_has_finish==2" style="margin-top:10px">终止查询</el-button>
-                        <el-button type="danger" plain v-show="search_has_finish==1||search_has_finish==3"
-                            @click="clear_()" style="margin-top:10px">清空查询结果</el-button>
-
-                    </el-form-item>
-
-                </el-form>
-            </div>
-
-            <!-- 可用教室列表 -->
-            <el-card v-if="available.length >= 0" style="width:80%;margin:0 auto;">
-                <div slot="header" style="display: flex;justify-content: space-between;flex-wrap: wrap;">
-                    <div style="font-weight: bold;">可用教室列表：</div>
-                    <div>
-                        <div style="display: inline-block;float: left;font-size:14px">查询进度 &nbsp;</div>
-                        <div style="display: inline-block;float: right;min-width:250px">
-                            <el-progress :text-inside="true" :stroke-width="22" :percentage="search_percentage"
-                                :color="percentagecustomColors" status="warning"></el-progress>
+                        <el-divider content-position="left"><i class="el-icon-time"></i>时间选择</el-divider>
+                        <div style="font-size: 13px;color: #adb5bd;margin-left:20px;margin-bottom: 10px;">
+                            输入空闲的时段自动查找匹配教室，开始节次需要小于结束节次，其标识空闲教室从<b>第x节次上课时</b>开始至<b>第y节次下课时</b>均无人。
+                            <el-popover placement="top-start" title="节次时间表" width="200" trigger="hover">
+                                <div v-for="o in time_calendar">
+                                    <div style="color:#adb5bd" v-show="o.val<jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
+                                        {{o.startTime}}~{{o.endTime}}</div>
+                                    <div v-show="o.val>=jieci_Next-1">第{{o.val}}节&nbsp;&nbsp;
+                                        {{o.startTime}}~{{o.endTime}}</div>
+                                </div>
+                                <el-link type="primary" slot="reference">查看节次时间表</el-link>
+                            </el-popover>
                         </div>
+                        <el-form-item label="开始节次">
+
+
+                            <!-- <el-input v-model="start"></el-input> -->
+                            <el-input-number v-model="start" :min="1" :max="end"></el-input-number>
+                        </el-form-item>
+                        <el-form-item label="结束节次">
+                            <!-- <el-input v-model="end"></el-input> -->
+                            <el-input-number v-model="end" :min="start" :max="12"></el-input-number>
+                        </el-form-item>
+                        <el-checkbox v-model="canLocalstorage" size="mini"
+                            style="margin-left:100px;margin-bottom: 10px;">
+                            启用缓存记录上次查询教学楼
+                            <el-popover placement="top-start" title="缓存干啥？" width="200" trigger="hover"
+                                content="因为chrome内核浏览器不支持定位服务，因此可以启动缓存功能，记录上一次点击查询的教学楼名称，以方便下一次查询。如果您的浏览器支持定位,开启后无影响，定位后仍然默认为定位位置">
+                                <i class="el-icon-question" slot="reference"></i>
+                            </el-popover>
+                        </el-checkbox>
+                        <el-form-item>
+                            <el-button type="primary" @click="find_available_classroom()"
+                                :loading="search_has_finish==2" style="margin-top:10px">查询可用教室</el-button>
+                            <!-- <el-button type="danger" plain v-show="search_percentage>0" @click="clear_()">清空查询</el-button> -->
+                            <el-button type="warning" round icon="el-icon-remove-outline" @click="stopNow()"
+                                v-show="search_has_finish==2" style="margin-top:10px">终止查询</el-button>
+                            <el-button type="danger" plain v-show="search_has_finish==1||search_has_finish==3"
+                                @click="clear_()" style="margin-top:10px">清空查询结果</el-button>
+
+                        </el-form-item>
+
+                    </el-form>
+                </div>
+
+                <!-- 可用教室列表 -->
+                <el-card v-if="available.length >= 0" style="width:80%;margin:0 auto;">
+                    <div slot="header" style="display: flex;justify-content: space-between;flex-wrap: wrap;">
+                        <div style="font-weight: bold;">可用教室列表：</div>
+                        <div>
+                            <div style="display: inline-block;float: left;font-size:14px">查询进度 &nbsp;</div>
+                            <div style="display: inline-block;float: right;min-width:250px">
+                                <el-progress :text-inside="true" :stroke-width="22" :percentage="search_percentage"
+                                    :color="percentagecustomColors" status="warning"></el-progress>
+                            </div>
+                        </div>
+
                     </div>
-
-                </div>
-                <div>
-                    <span v-if="available.length==0&& search_percentage<=0" style="color:#ff6b6b">请输入信息后点击查询</span>
-                    <span v-else-if="search_percentage>0&& search_percentage<100&&search_has_finish!=3"
-                        style="color:#2862d6" style="margin-bottom: 10px;"><i
-                            class="el-icon-loading"></i>查询内容较多，请稍等</span>
-                    <el-alert v-else-if="search_has_finish==3" :title="'查询被终止,目前共查询到'+available.length+'个教室'"
-                        type="warning" show-icon :closable="false">
-                    </el-alert><br v-else-if="search_has_finish==3" />
-                    <el-alert v-if="search_has_finish==1" :title="'查询成功,共查询到'+available.length+'个教室'" type="success"
-                        show-icon :closable="false">
-                    </el-alert><br />
-                    <!-- 提示 -->
+                    <div>
+                        <span v-if="available.length==0&& search_percentage<=0" style="color:#ff6b6b">请输入信息后点击查询</span>
+                        <span v-else-if="search_percentage>0&& search_percentage<100&&search_has_finish!=3"
+                            style="color:#2862d6" style="margin-bottom: 10px;"><i
+                                class="el-icon-loading"></i>查询内容较多，请稍等</span>
+                        <el-alert v-else-if="search_has_finish==3" :title="'查询被终止,目前共查询到'+available.length+'个教室'"
+                            type="warning" show-icon :closable="false">
+                        </el-alert><br v-else-if="search_has_finish==3" />
+                        <el-alert v-if="search_has_finish==1" :title="'查询成功,共查询到'+available.length+'个教室'" type="success"
+                            show-icon :closable="false">
+                        </el-alert><br />
+                        <!-- 提示 -->
 
 
 
-                    <span v-for="room in available" :key="room"> &nbsp;{{ room }}&nbsp; </span>
+                        <span v-for="room in available" :key="room"> &nbsp;{{ room }}&nbsp; </span>
 
-                    <el-empty v-if="search_percentage==100 && available.length==0 "
-                        description="您的筛选条件下暂无空闲教室"></el-empty>
-                </div>
-            </el-card>
+                        <el-empty v-if="(search_has_finish==1) && available.length==0 "
+                            description="'您的筛选条件下暂无空闲教室"></el-empty>
+                        <el-empty v-else-if="(search_has_finish==3) && available.length==0 "
+                            description="您中断了查询，在已经查询的教室中，您的筛选条件下暂无空闲教室"></el-empty>
+                    </div>
+                </el-card>
+            </div>
+            <div v-show="!canSeach">
+                <el-alert title="暂停服务" type="warning" description="现在已经到了节假日，本服务暂停，开学当天（周一）会恢复。" show-icon center
+                    :closable="false">
+                </el-alert>
+            </div>
         </div>
 
 
@@ -330,9 +340,15 @@
                     { color: '#ffd8a8', percentage: 75 },
                     { color: '#ffe066', percentage: 95 },
                     { color: '#96f2d7', percentage: 100 }
-                ]
+                ],
+
+
+                //允许查询？
+                canSeach: true,
             },
             created() {
+
+
                 // 从 localStorage 中获取保存的 JSON 字符串
                 var jsonArray = localStorage.getItem("uestcFindAvailableBuilding");
                 if (jsonArray != null) {
@@ -342,16 +358,24 @@
                 //获取当前星期几
                 this.get_xqj();
                 this.getlocation();
-                this.TimeNow();
+
+                setTimeout(() => {
+                    if (this.pickerDateOptions.disabledDate(new Date(), this)) {
+                        //如果今天在查询范围之外
+                        this.canSeach = false;
+                        return;
+                    }
+                    this.TimeNow();
+                }, 5);
 
 
             },
             computed: {
                 //第二选择
                 pickerDateOptions() {
-                    let that = this;
+                    let that_ = this;
                     return {
-                        disabledDate(time) {
+                        disabledDate(time, that = that_) {
                             const currentDate = new Date();
                             const currentYear = currentDate.getFullYear();
                             const currentMonth = currentDate.getMonth() + 1;
@@ -359,7 +383,8 @@
                             const startDate = new Date(that.startMon);
                             const endDate = new Date(startDate.getTime() + ((25 * 7 - 1) * 24 * 60 * 60 * 1000)); // 将日期向后推进 25 周
                             return time.getTime() < startDate || time.getTime() > endDate;
-                        }
+                        },
+
 
                     }
                 },
@@ -564,6 +589,7 @@
                     if (!this.checkFrom()) {
                         return
                     }
+
                     // 将 JSON 字符串保存到 localStorage 中的名为 "myArray" 的键中
                     if (this.canLocalstorage) {
                         let jsonArray = JSON.stringify(this.building_name);
@@ -642,6 +668,7 @@
                                 // console.log(response.data.data[j].ksjc >= that.end || response.data.data[j].jsjc <= that.start);
                                 let [s, e] = response.data.data[j].kksd.split('-').map(Number);
                                 if (that.search_has_finish == 3) {
+                                    is_avail = false;
                                     break;
                                 }
                                 if (response.data.data[j].xqj == that.xqj && that.week >= s && (that.week <= e || e == undefined) && !(response.data.data[j].jsjc <= that.start || response.data.data[j].ksjc >= that.end)) {
