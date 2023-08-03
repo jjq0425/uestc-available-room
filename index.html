@@ -5,7 +5,8 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>UESTC查询哪些教室空闲</title>
+    <meta name="referrer" content="no-referrer">
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 </head>
 
@@ -18,6 +19,10 @@
         <div id="classroom">
             <div style="text-align:center;">
                 <h1>UESTC查询哪些教室空闲V0.7</h1>
+                <div>项目地址：<el-link href="https://github.com/jjq419875574/uestc-available-room" target="_blank"
+                        type="primary">Github</el-link>
+                    <span></span><el-tag size="mini">已开源</el-tag>
+                </div>
             </div>
             <hr>
             <div v-show="canSeach">
@@ -230,9 +235,9 @@
 
     </div>
     <!-- 开发环境版本，包含了有帮助的命令行警告 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script> -->
+
     <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script> -->
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11/dist/vue.min.js"></script>
+    <script src="./vue.min.js"></script>
     <!-- 官网提供的 axios 在线地址 -->
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <!-- 引入element组件 -->
