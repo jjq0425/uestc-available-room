@@ -116,7 +116,10 @@
 
                         <el-divider content-position="left"><i class="el-icon-date"></i>日期选择</el-divider>
                         <div style="font-size: 13px;color: #adb5bd;margin-left:20px;"><b>星期几+第几周</b> 或者 <b>日期</b>
-                            只需填写任意一组，另一组会自动匹配。默认填写今日的</div>
+                            只需填写任意一组，另一组会自动匹配。默认填写今日的
+                        </div>
+                        <div style="color:red" v-show="isPreTime">
+                            当前非第一周，但可供提前查询（只能通过教学周周数和星期几查询），日期查询暂不可用（开学第一周周一当天可用）</div>
                         <br /><el-row :gutter="20" type="flex" style="flex-wrap: wrap;">
                             <el-col :span="10">
                                 <div class="grid-content bg-purple"></div><el-form-item label="第几周">
@@ -131,11 +134,13 @@
                                 </el-form-item>
                             </el-col>
                             <el-col :span="100">
+
                                 <div class="grid-content bg-purple">
+
                                     <el-form-item label="日期">
-                                        <el-date-picker v-model="pickDate" type="date" placeholder="选择日期"
+                                        <el-date-picker v-model="isPreTime?{}:pickDate" type="date" placeholder="选择日期"
                                             :picker-options="pickerDateOptions" @change="week_xqj_change(2)"
-                                            :clearable="false">
+                                            :clearable="false" disabled="isPreTime">
                                         </el-date-picker>
                                     </el-form-item>
                                 </div>
@@ -351,6 +356,8 @@
 
                 //允许查询？
                 canSeach: true,
+                isPreTime: false,
+                //是否开启了提前查询，信息中心可能提前一周开始查询。此时视为提前查询。日期选项可能不作数。
             },
             created() {
 
@@ -371,6 +378,7 @@
                         this.canSeach = false;
                         return;
                     }
+                    console.info(">>🌼第一周开始日期：", this.startMon, "若当前是第0周，则此数据不准确")
                     this.TimeNow();
                 }, 5);
 
@@ -387,6 +395,7 @@
                             const currentMonth = currentDate.getMonth() + 1;
                             const currentDay = currentDate.getDate();
                             const startDate = new Date(that.startMon);
+
                             const endDate = new Date(startDate.getTime() + ((25 * 7 - 1) * 24 * 60 * 60 * 1000)); // 将日期向后推进 25 周
                             return time.getTime() < startDate || time.getTime() > endDate;
                         },
@@ -721,7 +730,11 @@
 
                     }).then(function (response) {
                         that.week = response.data;
-                        that.startMon = that.getPreviousWeekDateAndNextMonday(new Date(), response.data);
+                        if (that.week < 0) {
+                            that.week = 1;
+                            that.isPreTime = true;
+                        }
+                        that.startMon = that.getPreviousWeekDateAndNextMonday(new Date(), that.week);
                         // console.log(that.week);
                     }).catch(function (error) {
                         console.log(error);
