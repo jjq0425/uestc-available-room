@@ -827,7 +827,7 @@
                         targetDate.setHours(0, 0, 0);
                         const timeDiff = targetDate.getTime() - startDate.getTime(); // 计算选定日期与第一周的时间差
                         // console.warn(targetDate)
-                        this.week = Math.ceil(timeDiff / (7 * 24 * 60 * 60 * 1000)) + 1; // 计算对应的周数
+                        this.week = Math.ceil(timeDiff / (7 * 24 * 60 * 60 * 1000)); // 计算对应的周数
                         const xqj_tmp = targetDate.getDay(); // 获取选定日期是星期几（0表示星期天，1表示星期一，以此类推）
                         if (xqj_tmp == 0) {
                             this.xqj = 7;
