@@ -140,7 +140,7 @@
                                     <el-form-item label="日期">
                                         <el-date-picker v-model="isPreTime?{}:pickDate" type="date" placeholder="选择日期"
                                             :picker-options="pickerDateOptions" @change="week_xqj_change(2)"
-                                            :clearable="false" disabled="isPreTime">
+                                            :clearable="false" :disabled="isPreTime">
                                         </el-date-picker>
                                     </el-form-item>
                                 </div>
